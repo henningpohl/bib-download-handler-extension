@@ -1,0 +1,55 @@
+{
+    "name": "bib-download-handler",
+    "description": "Intercepts downloads of citation file formats, converts them to bibtex, and makes them available for pasting elsewhere.",
+    "version": "0.0.1",
+    "homepage": "https://github.com/henningpohl/bib-download-handler-extension",
+    "author": "Henning Pohl",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/henningpohl/bib-download-handler-extension"
+    },
+    "scripts": {
+        "start": "xt-build -e dev -w",
+        "start:firefox": "xt-build -e dev -p firefox -w",
+        "build": "xt-build -e prod",
+        "build:firefox": "xt-build -e prod -p firefox",
+        "clean": "xt-clean",
+        "docs": "xt-docs",
+        "test": "xt-test",
+        "coverage": "nyc --reporter=lcov npm run test",
+        "sync": "xt-sync"
+    },
+    "babel": {
+        "presets": [
+            "@babel/preset-env"
+        ]
+    },
+    "eslintIgnore": [
+        "test/**/*"
+    ],
+    "dependencies": {
+      "@citation-js/core": "^0.7.14",
+      "@citation-js/plugin-ris": "^0.7.16",
+      "@citation-js/plugin-bibtex": "^0.7.16",
+      "@citation-js/plugin-csl": "^0.7.14"
+    },
+    "devDependencies": {
+        "extension-cli": "latest"
+    },
+    "xtdocs": {
+        "source": {
+            "include": [
+                "README.md",
+                "src"
+            ]
+        }
+    },
+    "xtbuild": {
+        "js_bundles": [
+            {
+                "name": "background",
+                "src": "./src/**/*.js"
+            }
+        ]
+    }
+}

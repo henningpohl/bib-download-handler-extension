@@ -1,0 +1,23 @@
+{
+    "appName": {
+        "message": "Bib Download Handler Extention"
+    },
+    "appShortName": {
+        "message": "Bib-Dl Handler"
+    },
+    "appDescription": {
+        "message": "Intercepts downloads of citation file formats, converts them to bibtex, and makes them available for pasting elsewhere."
+    },
+    "bibInterceptedNotificationTitle": {
+        "message": "Bib file intercepted"
+    },
+    "bibInterceptedNotificationMessage": {
+        "message": "Bibtex format copied to clipboard"
+    },
+    "bibCopyFailNotificationTitle": {
+        "message": "Bib file intercepted"
+    },
+    "bibCopyFailNotificationMessage": {
+        "message": "Error while copying Bibtex to clipboard"
+    }
+}
