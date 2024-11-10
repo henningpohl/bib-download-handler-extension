@@ -20,7 +20,17 @@ async function getTab() {
 }
 
 async function handleFile(content) {
-	let parsed = new Cite(content);
+	try {
+		let parsed = new Cite(content);
+	} catch(error) {
+		await chrome.notifications.create("", {
+			type: "basic",
+			title: chrome.i18n.getMessage("bibParseFailNotificationTitle"),
+			message: chrome.i18n.getMessage("bibParseFailNotificationMessage"),
+			iconUrl: "assets/img/128x128.png"
+		});
+		return false;
+	}
 	
 	chrome.scripting.executeScript({
 		target: {tabId : await getTab()},
@@ -34,6 +44,7 @@ async function handleFile(content) {
 				message: chrome.i18n.getMessage("bibInterceptedNotificationMessage"),
 				iconUrl: "assets/img/128x128.png"
 			});
+			return true;
 		} else {
 			await chrome.notifications.create("", {
 				type: "basic",
@@ -41,6 +52,7 @@ async function handleFile(content) {
 				message: chrome.i18n.getMessage("bibCopyFailNotificationMessage"),
 				iconUrl: "assets/img/128x128.png"
 			});
+			return false;
 		}
 	});
 }
@@ -53,9 +65,15 @@ let interceptedMimeTypes = [
 
 chrome.downloads.onCreated.addListener((downloadItem) => {
 	if(interceptedMimeTypes.includes(downloadItem.mime)) {
-		chrome.downloads.cancel(downloadItem.id);
+		chrome.downloads.pause(downloadItem.id);
 		fetch(downloadItem.finalUrl, {"referrer": downloadItem.referrer}).then(r => r.text()).then(result => {
-			handleFile(result);
+			handleFile(result).then((res) => {
+				if(res) {
+					chrome.downloads.cancel(downloadItem.id);
+				} else {
+					chrome.downloads.resume(downloadItem.id);
+				}
+			});
 		});
 	}
 });

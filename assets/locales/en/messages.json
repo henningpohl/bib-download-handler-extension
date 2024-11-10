@@ -19,5 +19,11 @@
     },
     "bibCopyFailNotificationMessage": {
         "message": "Error while copying Bibtex to clipboard"
+    },
+    "bibParseFailNotificationTitle": {
+        "message": "Bib file intercepted"
+    },
+    "bibParseFailNotificationMessage": {
+        "message": "Error parsing file, resuming download"
     }
 }

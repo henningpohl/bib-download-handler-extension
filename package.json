@@ -1,7 +1,7 @@
 {
     "name": "bib-download-handler",
     "description": "Intercepts downloads of citation file formats, converts them to bibtex, and makes them available for pasting elsewhere.",
-    "version": "0.0.1",
+    "version": "0.0.2",
     "homepage": "https://github.com/henningpohl/bib-download-handler-extension",
     "author": "Henning Pohl",
     "repository": {
