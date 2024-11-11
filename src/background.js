@@ -19,10 +19,17 @@ async function getTab() {
   return tabs[0].id;
 }
 
-async function handleFile(content) {
+function parseContent(content) {
 	try {
-		let parsed = new Cite(content);
+		return new Cite(content);
 	} catch(error) {
+		return undefined;
+	}
+}
+
+async function handleFile(content) {
+	let parsed = parseContent(content);
+	if(parsed === undefined) {
 		await chrome.notifications.create("", {
 			type: "basic",
 			title: chrome.i18n.getMessage("bibParseFailNotificationTitle"),
@@ -32,7 +39,17 @@ async function handleFile(content) {
 		return false;
 	}
 	
-	chrome.scripting.executeScript({
+	if(parsed.data.length == 0) {
+		await chrome.notifications.create("", {
+			type: "basic",
+			title: chrome.i18n.getMessage("bibParseFailNotificationTitle"),
+			message: chrome.i18n.getMessage("bibParseFailNotificationMessage"),
+			iconUrl: "assets/img/128x128.png"
+		});
+		return false;
+	}
+	
+	return chrome.scripting.executeScript({
 		target: {tabId : await getTab()},
 		func: writeToClipboard,
 		args: [parsed.format('bibtex')]
