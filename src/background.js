@@ -81,6 +81,10 @@ let interceptedMimeTypes = [
 ];
 
 chrome.downloads.onCreated.addListener((downloadItem) => {
+	if(downloadItem.state == chrome.downloads.State.COMPLETE) {
+		return;
+	}
+	
 	if(interceptedMimeTypes.includes(downloadItem.mime)) {
 		chrome.downloads.pause(downloadItem.id);
 		fetch(downloadItem.finalUrl, {"referrer": downloadItem.referrer}).then(r => r.text()).then(result => {
