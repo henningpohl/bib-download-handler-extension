@@ -4,8 +4,9 @@ require('@citation-js/plugin-bibtex')
 require('@citation-js/plugin-csl')
 
 
+// Runs in the page context. executeScript waits for the returned promise.
 function writeToClipboard(text) {
-	navigator.clipboard.writeText(text),then(() => {
+	return navigator.clipboard.writeText(text).then(() => {
 		return true;
 	}).catch(() => {
 		return false;
@@ -53,8 +54,10 @@ async function handleFile(content) {
 		target: {tabId : await getTab()},
 		func: writeToClipboard,
 		args: [parsed.format('bibtex')]
+	}).catch(() => {
+		return undefined;
 	}).then(async (res) => {
-		if(res) {
+		if(res?.[0]?.result === true) {
 			await chrome.notifications.create("", {
 				type: "basic",
 				title: chrome.i18n.getMessage("bibInterceptedNotificationTitle"),
@@ -80,21 +83,47 @@ let interceptedMimeTypes = [
 	"application/vnd.citationstyles.style+xml"
 ];
 
+// Downloads older than this are not intercepted. On startup, Chrome fires
+// onCreated for entries loaded from the download history.
+const MAX_DOWNLOAD_AGE_MS = 10000;
+
+function isNewDownload(downloadItem) {
+	if(downloadItem.state !== chrome.downloads.State.IN_PROGRESS) {
+		return false;
+	}
+	const started = new Date(downloadItem.startTime).getTime();
+	if(Number.isNaN(started)) {
+		return false;
+	}
+	return Date.now() - started <= MAX_DOWNLOAD_AGE_MS;
+}
+
 chrome.downloads.onCreated.addListener((downloadItem) => {
-	if(downloadItem.state == chrome.downloads.State.COMPLETE) {
+	if(!isNewDownload(downloadItem)) {
 		return;
 	}
-	
+
 	if(interceptedMimeTypes.includes(downloadItem.mime)) {
 		chrome.downloads.pause(downloadItem.id);
-		fetch(downloadItem.finalUrl, {"referrer": downloadItem.referrer}).then(r => r.text()).then(result => {
-			handleFile(result).then((res) => {
-				if(res) {
-					chrome.downloads.cancel(downloadItem.id);
-				} else {
-					chrome.downloads.resume(downloadItem.id);
+		fetch(downloadItem.finalUrl, {"referrer": downloadItem.referrer})
+			.then(r => {
+				if(!r.ok) {
+					throw new Error(`HTTP ${r.status}`);
 				}
+				return r.text();
+			})
+			.then(result => handleFile(result))
+			.then(async (res) => {
+				if(res) {
+					await chrome.downloads.cancel(downloadItem.id);
+					// Remove the cancelled entry from history so it doesn't linger.
+					await chrome.downloads.erase({id: downloadItem.id});
+				} else {
+					await chrome.downloads.resume(downloadItem.id);
+				}
+			})
+			.catch(() => {
+				chrome.downloads.resume(downloadItem.id).catch(() => {});
 			});
-		});
 	}
 });
