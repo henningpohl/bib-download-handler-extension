@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bib Download Handler Options</title>
+<style>
+	:root { color-scheme: light dark; --muted: #666; --border: #ccc; --code-bg: #f4f4f4; }
+	@media (prefers-color-scheme: dark) { :root { --muted: #aaa; --border: #444; --code-bg: #222; } }
+	body { font: 14px/1.4 system-ui, sans-serif; margin: 16px; min-width: 420px; max-width: 640px; }
+	h2 { font-size: 15px; margin: 20px 0 8px; }
+	label.option { display: flex; gap: 8px; align-items: flex-start; margin: 8px 0; }
+	label.option input { margin-top: 3px; }
+	.hint { color: var(--muted); font-size: 12px; }
+	input[type=text] { width: 100%; box-sizing: border-box; padding: 4px 6px; }
+	pre { background: var(--code-bg); border: 1px solid var(--border); padding: 8px; font-size: 12px; overflow-x: auto; }
+	.actions { display: flex; gap: 12px; align-items: center; margin-top: 12px; }
+	#status { color: var(--muted); font-size: 12px; }
+	.indent { display: flex; gap: 8px; align-items: center; margin-left: 24px; }
+	.indent.disabled { opacity: 0.5; }
+	.indent input { width: 4em; }
+	pre { tab-size: 4; }
+</style>
+</head>
+<body>
+	<h2>Citation key</h2>
+	<select id="citationKey">
+		<option value="original">Keep original</option>
+		<option value="doi">DOI (10.5555/jik.2023.0042)</option>
+		<option value="authorYear">Author and year (Lindqvist2023)</option>
+		<option value="authorYearTitle">Author, year and title word (Lindqvist2023Acoustic)</option>
+	</select>
+	<div class="hint">Falls back to the original key if the needed fields are missing</div>
+
+	<h2>Title</h2>
+	<select id="titleFormat">
+		<option value="asIs">Keep as downloaded</option>
+		<option value="titleCase">Title case</option>
+		<option value="protect">Keep exact capitalization (wrap in braces)</option>
+	</select>
+	<div class="hint">Wrapping in braces stops BibTeX styles from changing the title's case</div>
+
+	<h2>DOI and URL</h2>
+	<label class="option">
+		<input type="checkbox" id="normalizeDoi">
+		<span>Remove DOI prefix<br><span class="hint">https://doi.org/10.1145/123 &rarr; 10.1145/123</span></span>
+	</label>
+	<label class="option">
+		<input type="checkbox" id="removeDoiResolverUrls">
+		<span>Remove DOI link URLs<br><span class="hint">Drops <code>url</code> when it is https://doi.org/&hellip; for the same DOI</span></span>
+	</label>
+	<label class="option">
+		<input type="checkbox" id="removePublisherDoiUrls">
+		<span>Remove publisher URLs containing the DOI<br><span class="hint">e.g. https://dl.acm.org/doi/10.1145/123</span></span>
+	</label>
+	<label class="option">
+		<input type="checkbox" id="removeUrlWithDoi">
+		<span>Remove URL when a DOI is present<br><span class="hint">Drops <code>url</code> for any entry that has a DOI, whatever it links to</span></span>
+	</label>
+	<label class="option">
+		<input type="checkbox" id="removeHowpublishedUrl">
+		<span>Remove duplicate <code>howpublished</code><br><span class="hint">Drops <code>howpublished</code> when it matches <code>url</code></span></span>
+	</label>
+
+	<h2>Remove fields</h2>
+	<input type="text" id="omitFields" placeholder="abstract, keywords, file">
+	<div class="hint">Comma-separated field names</div>
+
+	<h2>Formatting</h2>
+	<label class="option">
+		<input type="checkbox" id="customIndent">
+		<span>Custom indentation<br><span class="hint">Default: one tab</span></span>
+	</label>
+	<div class="indent">
+		<label for="indentType">Indent with</label>
+		<select id="indentType">
+			<option value="tab">Tabs</option>
+			<option value="space">Spaces</option>
+		</select>
+		<label for="indentSize">Width</label>
+		<input type="number" id="indentSize" min="0" max="8" step="1">
+	</div>
+
+	<h2>Preview</h2>
+	<div class="hint">Example entry with the current settings applied</div>
+	<pre id="preview"></pre>
+	<div class="hint" id="previewChanges"></div>
+
+	<div class="actions">
+		<button id="reset">Restore defaults</button>
+		<span id="status"></span>
+	</div>
+	<script src="options.js"></script>
+</body>
+</html>

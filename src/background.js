@@ -1,7 +1,7 @@
-const {Cite} = require('@citation-js/core')
-require('@citation-js/plugin-ris')
-require('@citation-js/plugin-bibtex')
-require('@citation-js/plugin-csl')
+const {parseCitationFile} = require('./parse.js')
+const {detectFormat} = require('./formats.js')
+const {cleanEntries, formatEntries} = require('./cleanup.js')
+const {loadSettings} = require('./settings.js')
 
 
 // Runs in the page context. executeScript waits for the returned promise.
@@ -20,16 +20,8 @@ async function getTab() {
   return tabs[0].id;
 }
 
-function parseContent(content) {
-	try {
-		return new Cite(content);
-	} catch(error) {
-		return undefined;
-	}
-}
-
 async function handleFile(content) {
-	let parsed = parseContent(content);
+	let parsed = parseCitationFile(content);
 	if(parsed === undefined) {
 		await chrome.notifications.create("", {
 			type: "basic",
@@ -40,20 +32,13 @@ async function handleFile(content) {
 		return false;
 	}
 	
-	if(parsed.data.length == 0) {
-		await chrome.notifications.create("", {
-			type: "basic",
-			title: chrome.i18n.getMessage("bibParseFailNotificationTitle"),
-			message: chrome.i18n.getMessage("bibParseFailNotificationMessage"),
-			iconUrl: "assets/img/128x128.png"
-		});
-		return false;
-	}
-	
+	const settings = await loadSettings();
+	const entries = cleanEntries(parsed.format('bibtex', {format: 'object'}), settings);
+
 	return chrome.scripting.executeScript({
 		target: {tabId : await getTab()},
 		func: writeToClipboard,
-		args: [parsed.format('bibtex')]
+		args: [formatEntries(entries, settings)]
 	}).catch(() => {
 		return undefined;
 	}).then(async (res) => {
@@ -77,15 +62,10 @@ async function handleFile(content) {
 	});
 }
 
-let interceptedMimeTypes = [
-	"application/x-research-info-systems",
-	"application/x-bibtex",
-	"application/vnd.citationstyles.style+xml"
-];
-
-// Downloads older than this are not intercepted. On startup, Chrome fires
-// onCreated for entries loaded from the download history.
+// Downloads older than this are not intercepted (safety net against
+// entries restored from the download history).
 const MAX_DOWNLOAD_AGE_MS = 10000;
+const FETCH_TIMEOUT_MS = 15000;
 
 function isNewDownload(downloadItem) {
 	if(downloadItem.state !== chrome.downloads.State.IN_PROGRESS) {
@@ -98,32 +78,59 @@ function isNewDownload(downloadItem) {
 	return Date.now() - started <= MAX_DOWNLOAD_AGE_MS;
 }
 
-chrome.downloads.onCreated.addListener((downloadItem) => {
-	if(!isNewDownload(downloadItem)) {
+async function fetchDownload(downloadItem) {
+	const response = await fetch(downloadItem.finalUrl || downloadItem.url, {
+		referrer: downloadItem.referrer || undefined,
+		signal: AbortSignal.timeout(FETCH_TIMEOUT_MS)
+	});
+	if(!response.ok) {
+		throw new Error(`HTTP ${response.status}`);
+	}
+	return response.text();
+}
+
+// Returns true if the download was handled (and should be cancelled).
+async function interceptDownload(downloadItem) {
+	try {
+		const content = await fetchDownload(downloadItem);
+		return await handleFile(content);
+	} catch(error) {
+		return false;
+	}
+}
+
+// onDeterminingFilename only fires for new downloads (not for history on
+// startup) and provides the suggested file name, so formats served with a
+// generic MIME type (e.g. application/octet-stream) can be recognized by
+// extension. Chrome holds the download until suggest() is called, so nothing
+// is written to disk while the file is being handled.
+chrome.downloads.onDeterminingFilename.addListener((downloadItem, suggest) => {
+	const format = detectFormat({
+		mime: downloadItem.mime,
+		filename: downloadItem.filename,
+		url: downloadItem.finalUrl || downloadItem.url
+	});
+	if(!format || !isNewDownload(downloadItem)) {
+		suggest();
 		return;
 	}
 
-	if(interceptedMimeTypes.includes(downloadItem.mime)) {
-		chrome.downloads.pause(downloadItem.id);
-		fetch(downloadItem.finalUrl, {"referrer": downloadItem.referrer})
-			.then(r => {
-				if(!r.ok) {
-					throw new Error(`HTTP ${r.status}`);
-				}
-				return r.text();
-			})
-			.then(result => handleFile(result))
-			.then(async (res) => {
-				if(res) {
-					await chrome.downloads.cancel(downloadItem.id);
-					// Remove the cancelled entry from history so it doesn't linger.
-					await chrome.downloads.erase({id: downloadItem.id});
-				} else {
-					await chrome.downloads.resume(downloadItem.id);
-				}
-			})
-			.catch(() => {
-				chrome.downloads.resume(downloadItem.id).catch(() => {});
-			});
-	}
+	interceptDownload(downloadItem).then(async (handled) => {
+		if(handled) {
+			try {
+				await chrome.downloads.cancel(downloadItem.id);
+				// Remove the cancelled entry from history so it doesn't linger.
+				await chrome.downloads.erase({id: downloadItem.id});
+			} catch(error) {
+				// Download may already be gone.
+			}
+		}
+	}).finally(() => {
+		try {
+			suggest();
+		} catch(error) {
+			// Ignored: the download was cancelled.
+		}
+	});
+	return true; // suggest() is called asynchronously
 });

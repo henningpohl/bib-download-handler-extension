@@ -1,29 +1,29 @@
 {
     "appName": {
-        "message": "Bib Download Handler Extention"
+        "message": "Bib Download Handler Extension"
     },
     "appShortName": {
         "message": "Bib-Dl Handler"
     },
     "appDescription": {
-        "message": "Intercepts downloads of citation file formats, converts them to bibtex, and makes them available for pasting elsewhere."
+        "message": "Intercepts citation file downloads, converts them to BibTeX, and copies the result to the clipboard."
     },
     "bibInterceptedNotificationTitle": {
-        "message": "Bib file intercepted"
+        "message": "Citation download intercepted"
     },
     "bibInterceptedNotificationMessage": {
-        "message": "Bibtex format copied to clipboard"
+        "message": "BibTeX copied to the clipboard."
     },
     "bibCopyFailNotificationTitle": {
-        "message": "Bib file intercepted"
+        "message": "Could not copy BibTeX"
     },
     "bibCopyFailNotificationMessage": {
-        "message": "Error while copying Bibtex to clipboard"
+        "message": "Copying to the clipboard failed. The download has been resumed."
     },
     "bibParseFailNotificationTitle": {
-        "message": "Bib file intercepted"
+        "message": "Citation file not recognized"
     },
     "bibParseFailNotificationMessage": {
-        "message": "Error parsing file, resuming download"
+        "message": "The file could not be parsed. The download has been resumed."
     }
 }

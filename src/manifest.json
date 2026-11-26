@@ -10,6 +10,7 @@
     "minimum_chrome_version": "88",
     "permissions": [
         "downloads",
+        "storage",
         "notifications",
         "clipboardWrite",
         "scripting",
@@ -20,6 +21,10 @@
     },
     "background": {
         "service_worker": "background.js"
+    },
+    "options_ui": {
+        "page": "options.html",
+        "open_in_tab": false
     },
     "action": {
         "default_icon": {

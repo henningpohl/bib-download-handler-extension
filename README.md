@@ -2,6 +2,21 @@
 
 Chrome extension to intercept downloads of citation file formats, which are then converted to bibtex and copied to the clipboard. Uses [Citation.js](https://citation.js.org/#usage) to do the heavy lifting of recognizing and converting different formats.
 
+## Supported formats
+
+Downloads are recognized by MIME type, or by file extension when the server sends a generic type such as `application/octet-stream`.
+
+| Format | Extensions | MIME types |
+| --- | --- | --- |
+| BibTeX / BibLaTeX | `.bib`, `.bibtex` | `application/x-bibtex`, `text/x-bibtex`, `application/x-bibtex-text-file` |
+| RIS | `.ris` | `application/x-research-info-systems`, `text/x-research-info-systems` |
+| EndNote tagged | `.enw` | `application/x-endnote-refer` |
+| CSL-JSON | `.csl.json` | `application/vnd.citationstyles.csl+json` |
+
+RefWorks tagged content is also parsed, but RefWorks exports are usually plain `.txt` files and are therefore not intercepted. PubMed/MEDLINE (`.nbib`) files are not supported by Citation.js.
+
+Output is always BibTeX. Cleanup, formatting and citation key options are available on the extension's options page.
+
 ## Development 
 
 This extension was created with [Extension CLI](https://oss.mobilefirst.me/extension-cli/)!
